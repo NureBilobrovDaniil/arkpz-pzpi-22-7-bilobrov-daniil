@@ -1,1 +1,4 @@
-# arkpz-pzpi-22-7-bilobrov-daniil
+ПЗПІ-22-7
+
+Білобров Даніїл
+
