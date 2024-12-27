@@ -1,0 +1,523 @@
+Міністерство освіти і науки України
+Харківський національний університет радіоелектроніки
+
+
+Кафедра програмної інженерії
+
+
+Звіт
+до лабораторної роботи №2
+з «Аналізу та рефакторингу коду»
+
+
+
+
+
+Виконав:                                                                                                   Перевірив:
+ст. гр. ПЗПІ-22-7                                                                              ст. викладач ПІ
+Білобров Д.Є.                                                                                      Сокорчук І.П. 
+                                                  
+ 
+
+
+ 
+  
+
+
+
+Харків 2024
+
+
+ЛАБОРАТОРНА РОБОТА №2. РОЗРОБКА БАЗИ ДАНИХ ДЛЯ СЕРВЕРНОЇ ЧАСТИНИ ПРОГРАМНОЇ СИСТЕМИ ТА ПРИКЛАДНОГО ПРОГРАМНОГО ІНТЕРФЕЙСУ (API)
+
+Мета:  Розробити базу даних для серверної частини програмної системи та прикладного програмного інтерфейсу.
+
+Завдання:
+1. Розробити будову програмної системи.
+2. Створити UML діаграму прецедентів для серверної частини системи.
+3. Створити ER діаграму даних.
+4. Розробити базу даних (БД) програмної системи.
+5. Створити діаграму структури БД.
+6. Розробити функції роботи з БД (ORM або CoRM тощо).
+7. Розробити API (REST або GraphQL, gRPC тощо) для взаємодії серверної
+частини з клієнтами.
+8. Створити специфікацію розробленого API.
+9. Створити програмну реалізацію розробленого API та функцій роботи з БД.
+10.Перевірити роботу створеного програмного коду серверної частини системи.
+11.Завантажити або оновити (при потребі) створений програмний код у GitHub репозиторій для лабораторних робіт у гілку репозиторію main.
+
+
+	
+
+
+
+Хід роботи:
+
+Будова програмної системи:
+	 
+Рисунок 1 - Будова програмної системи
+
+
+
+
+
+
+
+
+
+
+Розглянемо use-case діаграму:
+ 
+Рисунок 2 - Будова use-case діаграми
+
+Розглянемо ER діаграму даних:
+
+ 
+Рисунок 3 - ER діаграма проєкту
+Діаграма структуру БД:
+
+ 
+Рисунок 4 - Структура БД
+
+
+Для реалізації проекту PivoGo була обрана база даних Microsoft SQL Server через її стабільність, потужний функціонал та інтеграцію з платформою .NET. SQL Server є одним із найпопулярніших рішень для роботи з реляційними базами даних, забезпечуючи підтримку складних запитів, транзакцій, високий рівень безпеки та надійності, що є критичними для масштабованих бізнес-рішень.
+
+Зв’язки між сутностями:
+
+1.	Користувачі та Замовлення (Users → Orders):
+
+•	Тип зв'язку: Один до багатьох (1:N)
+•	Опис: Один користувач може створити багато замовлень. Кожне замовлення належить лише одному користувачеві. У таблиці Orders є зовнішній ключ UserID, який посилається на первинний ключ UserID у таблиці Users.
+
+2.	Замовлення та Деталі замовлення (Orders → OrderDetails):
+
+●	Тип зв'язку: Один до багатьох (1:N)
+●	Опис: Одне замовлення може містити багато деталей (різних продуктів у замовленні). Кожна деталь замовлення пов'язана лише з одним замовленням. У таблиці OrderDetails є зовнішній ключ OrderID, який посилається на первинний ключ OrderID у таблиці Orders.
+
+3.	Деталі замовлення та Продукти (OrderDetails → Products):
+
+●	Тип зв'язку: Багато до одного (N:1)
+●	Опис: Кожен запис у таблиці OrderDetails пов'язаний із конкретним продуктом. Один продукт може бути вказаний у багатьох деталях замовлення. Кожен запис у таблиці OrderDetails пов'язаний із конкретним продуктом. Один продукт може бути вказаний у багатьох деталях замовлення.
+
+4.	Продукти та Категорії (Products → Categories):
+
+●	Тип зв'язку: Багато до одного (N:1)
+●	Опис: Один продукт належить до однієї категорії. Одна категорія може містити багато продуктів. У таблиці Products є зовнішній ключ CategoryID, який посилається на первинний ключ CategoryID у таблиці Categories.
+
+5.	Користувачі та Відгуки (Users → Feedback):
+
+●	Тип зв'язку: Один до багатьох (1:N)
+●	Опис: Один користувач може залишити багато відгуків. Кожен відгук належить лише одному користувачеві. У таблиці Feedback є зовнішній ключ UserID, який посилається на первинний ключ UserID у таблиці Users.
+
+6.	Замовлення та Відгуки (Orders → Feedback):
+
+•	Тип зв'язку: Один до багатьох (1:N).
+●	Одне замовлення може мати багато відгуків, якщо є різні аспекти (наприклад, загальний досвід, якість продукту). Кожен відгук пов'язаний із конкретним замовленням. У таблиці Feedback є зовнішній ключ OrderID, який посилається на первинний ключ OrderID у таблиці Orders.
+
+Загальна схема зв'язків:
+Users (1:N Orders): Користувач створює замовлення.
+Orders (1:N OrderDetails): Замовлення містить деталі.
+OrderDetails (N:1 Products): Кожна деталь посилається на конкретний продукт.
+Products (N:1 Categories): Продукт належить до однієї категорії.
+Users (1:N Feedback): Користувач залишає відгуки.
+Orders (1:N Feedback): Відгуки пов'язані із замовленням.
+
+Специфікація API:
+
+1) Сторінка реєстрації/авторизації:
+●	Реєстрація користувача (POST) /register
+●	Авторизація користувача: (POST) /login
+●	Зміна даних користувача: (PUT) / auth /change-info
+●	Вихід із облікового запису користувача: (PUT) /auth/logout
+●	Відновлення пароля користувача: (POST) /auth/forgot-pasword
+●	Змінення пароля користувача : (POST) /auth/reset-user-pasword
+
+2) Управління продуктами:
+●	Додавання продукту: (POST) /product/CreateProduct
+●	Оновлення продукту: (PUT) /product/UpdateProduct
+●	Видалення продукту: (DELETE) / product /DeleteProduct{id}
+
+■	3) Управління замовленнями:
+●	Створення замовлення: (POST) /order/CreateOrder
+●	Оновлення замовлення: (PUT) /order/UpdateOrder
+●	Видалення замовлення: (DELETE) /order/DeleteOrder
+●	Отримання деталей замовлення: (GET) /order/GetOrder/{orderId}
+
+4) Відгуки:
+●	Додавання відгуку: (POST) /feedback/CreateFeedback
+●	Оновлення відгуку: (PUT) /feedback/UpdateFeedback
+●	Видалення відгуку: (DELETE) /feedback/DeleteFeedback
+●	Отримання списку відгуків: (GET) /feedback/GetFeedbacks?productId={productId}
+
+
+5) Управління категоріями:
+●	Додавання категорії: (POST) /category/CreateCategory
+●	Оновлення категорії: (PUT) /category/UpdateCategory
+●	Видалення категорії: (DELETE) /category/DeleteCategory
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ДОДАТОК А
+
+Код програми
+
+Код AdminController.cs
+
+using AutoMapper;
+using PivoGo.Application.CQRS.Commands.Users.ResetUserPassword;
+using PivoGo.Application.CQRS.Commands.Users.UpdateUser;
+using PivoGo.Application.CQRS.Dtos.Commands;
+using PivoGo.Application.CQRS.Queries.User;
+using PivoGo.Domain.UserAggregate;
+using EmailService;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.CodeAnalysis.Differencing;
+using System.ComponentModel.DataAnnotations;
+
+namespace PivoGo.Api.Controllers
+{
+    [Route("api/admin")]
+    public class AdminController(IMediator mediator) : ControllerBase
+    {
+        [HttpPut("edit-profile")]
+        public async Task<IActionResult> UpdateUser([FromForm, Required] UpdateUserCommand command, CancellationToken cancellationToken)
+        {
+            var result = await mediator.Send(command, cancellationToken);
+
+            if (result.IsSuccess)
+            {
+                return Ok(new { result.Token, Message = "User profile updated successfully." });
+            }
+
+            return BadRequest(result.ErrorMessage);
+        }
+
+        [HttpGet("{userId}")]
+        public async Task<IActionResult> GetUserInfo(Guid userId, CancellationToken cancellationToken)
+        {
+            var query = new GetUserInfoQuery(userId);
+            var userInfo = await mediator.Send(query, cancellationToken);
+
+            return Ok(userInfo);
+        }
+
+        
+    }
+}
+
+
+					
+Код AuthController.cs
+
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
+using PivoGo.Application.CQRS.Commands.Auth.Login;
+using PivoGo.Application.CQRS.Commands.Auth.Logout;
+using PivoGo.Application.CQRS.Commands.Auth.Register;
+using PivoGo.Application.CQRS.Commands.Auth;
+using EmailService;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.WebUtilities;
+using PivoGo.Application.CQRS.Dtos.Commands;
+using PivoGo.Domain.UserAggregate;
+
+namespace PivoGo.Api.Controllers;
+
+[Route("api/auth")]
+public class AuthController(IMediator mediator, UserManager<User> userManager, IEmailSender emailSender) : ControllerBase
+{
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] RegisterCommand command, CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(command, cancellationToken);
+
+        if (result.IsSuccess)
+        {
+            return Ok(new { Message = "User registered successfully." });
+        }
+
+        return BadRequest(result.ErrorMessage);
+    }
+
+    [HttpPost("login-with-google")]
+    public async Task<IActionResult> LoginWithGoogle([FromBody] LoginWithGoogleCommand command,
+    CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(command, cancellationToken);
+
+        if (result.IsSuccess)
+        {
+            return Ok(new { result.Token, Message = "Login information added successfully." });
+        }
+
+        return BadRequest(result.ErrorMessage);
+    }
+
+    [HttpPost("login-with-github")]
+    public async Task<IActionResult> LoginWithGitHub([FromQuery] LoginWithGitHubCommand command, CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(command, cancellationToken);
+
+        if (result.IsSuccess)
+        {
+            return Ok(new { result.Token, Message = "GitHub login successful." });
+        }
+
+        return BadRequest(result.ErrorMessage);
+    }
+
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] LoginCommand command, CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(command, cancellationToken);
+
+        if (result.IsSuccess)
+        {
+            return Ok(new { result.Token, Message = "User logged in successfully." });
+        }
+
+        return StatusCode(403, result.ErrorMessage);
+    }
+
+    [HttpPut("logout")]
+    public async Task<IActionResult> Logout([FromBody] LogoutCommand command, CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(command, cancellationToken);
+
+        if (result.IsSuccess)
+        {
+            return Ok(new { Message = "Logout successful." });
+        }
+
+        return BadRequest(result.ErrorMessage);
+    }
+
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto forgotPassword)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest();
+
+        var user = await userManager.FindByEmailAsync(forgotPassword.Email!);
+        if (user is null)
+            return BadRequest("User not found");
+
+        var token = userManager.GeneratePasswordResetTokenAsync(user);
+        var param = new Dictionary<string, string?>
+            {
+                { "token", await token },
+                { "email", forgotPassword.Email! }
+            };
+
+        var callback = QueryHelpers.AddQueryString(forgotPassword.ClientUri!, param);
+
+        var message = new Message([user.Email], "Reset Password", callback);
+
+        await emailSender.SendEmail(message);
+
+        return Ok();
+    }
+
+    [HttpPost("reset-user-password")]
+    public async Task<IActionResult> ResetUserPassword([FromBody] ResetPasswordDto resetPassword)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest();
+
+        var user = await userManager.FindByEmailAsync(resetPassword.Email!);
+        if (user is null)
+            return BadRequest("User not found");
+
+        var result = await userManager.ResetPasswordAsync(user, resetPassword.Token!, resetPassword.Password!);
+        if (!result.Succeeded)
+        {
+            var errors = result.Errors.Select(e => e.Description);
+
+            return BadRequest(new { Errors = errors });
+        }
+
+        return Ok();
+    }
+}
+
+					Код ProductController.cs
+
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
+using PivoGo.Application.CQRS.Commands.Products.CreateProduct;
+using PivoGo.Application.CQRS.Commands.Products.DeleteProduct;
+using PivoGo.Application.CQRS.Commands.Products.UpdateProduct;
+
+//using PivoGo.Application.CQRS.Commands.Products.UpdateProduct;
+//using PivoGo.Application.CQRS.Queries.Product.GetAllProducts;
+//using PivoGo.Application.CQRS.Queries.Product.GetProductById;
+using System.ComponentModel.DataAnnotations;
+
+namespace PivoGo.Api.Controllers
+{
+    [Route("api/[controller]/[action]")]
+    [ApiController] // Атрибут для автоматической регистрации контроллера
+    public class ProductController : ControllerBase
+    {
+        private readonly IMediator _mediator;
+
+        // Конструктор с внедрением зависимостей
+        public ProductController(IMediator mediator)
+        {
+            _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
+        }
+
+        //// Получить все продукты
+        //[HttpGet]
+        //public async Task<IActionResult> GetAllProducts(CancellationToken cancellationToken)
+        //{
+        //    var products = await _mediator.Send(new GetAllProductsQuery(), cancellationToken);
+        //    return Ok(products);
+        //}
+
+        //// Получить продукт по ID
+        //[HttpGet("{id}")]
+        //public async Task<IActionResult> GetProductById(Guid id, CancellationToken cancellationToken)
+        //{
+        //    var product = await _mediator.Send(new GetProductByIdQuery(id), cancellationToken);
+
+        //    if (product == null)
+        //    {
+        //        return NotFound();
+        //    }
+
+        //    return Ok(product);
+        //}
+
+        // Создать продукт
+        [HttpPost]
+        public async Task<IActionResult> CreateProduct([FromBody, Required] CreateProductCommand command, CancellationToken cancellationToken)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            await _mediator.Send(command, cancellationToken);
+
+            return Ok(); // Вы можете вернуть объект с ID нового продукта, если нужно
+        }
+
+        // Обновить продукт
+        [HttpPut]
+        public async Task<IActionResult> UpdateProduct([FromBody, Required] UpdateProductCommand command, CancellationToken cancellationToken)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            await _mediator.Send(command, cancellationToken);
+
+            return Ok();
+        }
+
+        // Удалить продукт по ID
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteProduct(Guid id, CancellationToken cancellationToken)
+        {
+            await _mediator.Send(new DeleteProductCommand(id), cancellationToken);
+            return Ok();
+        }
+    }
+}
+
+LoginComand.cs
+
+using MediatR;
+using PivoGo.Application.CQRS.Dtos.Commands;
+
+namespace PivoGo.Application.CQRS.Commands.Auth.Login;
+
+public record LoginCommand(string Email, string Password) : IRequest<AuthResponseDto>;
+
+
+LoginCommandHandler.cs
+
+using MediatR;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
+using PivoGo.Application.CQRS.Dtos.Commands;
+using PivoGo.Application.Interfaces.Repositories;
+using PivoGo.Application.Interfaces.Services;
+using PivoGo.Application.Options;
+using PivoGo.Domain.UserAggregate;
+
+namespace PivoGo.Application.CQRS.Commands.Auth.Login;
+
+public class LoginCommandHandler(
+    IAuthRepository authRepository,
+    UserManager<User> userManager,
+    IOptions<AuthenticationOptions> authenticationOptions,
+    IJwtService jwtService) : IRequestHandler<LoginCommand, AuthResponseDto>
+{
+    public async Task<AuthResponseDto> Handle(LoginCommand request, CancellationToken cancellationToken)
+    {
+        var user = await authRepository.FindByEmailAsync(request.Email, cancellationToken);
+
+        if (user == null)
+        {
+            return CreateLoginResult(false, "User not found");
+        }
+        if (user.IsBanned)
+        {
+            return CreateLoginResult(false, "User is banned.");
+        }
+
+        var isPasswordValid = await userManager.CheckPasswordAsync(user, request.Password);
+
+        if (!isPasswordValid)
+        {
+            return CreateLoginResult(false, "Invalid password");
+        }
+
+        var roles = await userManager.GetRolesAsync(user);
+        var role = roles.FirstOrDefault();  
+
+        var token = await jwtService.GenerateJwtTokenAsync(user);
+
+        var tokenResult = await userManager.SetAuthenticationTokenAsync(user, authenticationOptions.Value.PivoGo.Provider, authenticationOptions.Value.PivoGo.TokenName, token);
+
+        if (!tokenResult.Succeeded)
+        {
+            return CreateLoginResult(false, "Could not save token");
+        }
+
+        return CreateLoginResult(true, token: token);
+    }
+
+    private AuthResponseDto CreateLoginResult(bool success, string errorMessage = null, string token = null)
+    {
+        return new AuthResponseDto { IsSuccess = success, ErrorMessage = errorMessage, Token = token };
+    }
+}
+
+
