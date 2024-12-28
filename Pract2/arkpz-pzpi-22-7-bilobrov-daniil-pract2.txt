@@ -39,6 +39,176 @@
 
 Обрані методи:
 Rename Method, Extract Method, Encapsulate Collection.
+
+
+Rename Method:
+
+Public Function Clc(amount As Double, rate As Double, years As Integer) As Double
+    Return amount * Math.Pow((1 + rate / 100), years)
+End Function
+
+Проблеми:
+Неінформативна назва методу (Clc)
+•	Проблема: Назва Clc дуже коротка і незрозуміла. Вона не дає жодного уявлення про те, що метод обчислює складні відсотки.
+Назви параметрів
+•	Проблема: Назви параметрів (amount, rate, years) загалом зрозумілі, але можуть бути покращені для більшої точності
+
+Після рефакторингу:
+Public Function CalculateCompoundInterest(principal As Double, annualRate As Double, timeInYears As Integer) As Double
+    ' Формула обчислення складних відсотків: A = P * (1 + r/n)^(n*t)
+    Return principal * Math.Pow((1 + annualRate / 100), timeInYears)
+End Function
+
+Sub Main()
+    Dim principal As Double = 1000
+    Dim annualRate As Double = 5
+    Dim timeInYears As Integer = 10
+
+    Dim totalAmount As Double = CalculateCompoundInterest(principal, annualRate, timeInYears)
+    Console.WriteLine("Total Amount after " & timeInYears & " years: " & totalAmount.ToString("F2"))
+End Sub
+
+Що змінилося після рефакторингу:
+Загальний ефект рефакторингу:
+1.	Читабельність: Код став зрозумілішим і легшим для сприйняття 
+2.	Підтримуваність: Зрозумілі назви та коментарі спрощують подальшу роботу з кодом.
+3.	Стандартизація: Назви методів і змінних тепер відповідають прийнятим практикам програмування.
+4.	Виведення результату: Форматування результату покращило зручність для користувача.
+
+Extract Method:
+
+До
+Public Function CalculateTotalAmount(principal As Double, rate As Double, years As Integer) As Double
+    ' Логіка обчислення складних відсотків
+    Dim total As Double = principal * Math.Pow((1 + rate / 100), years)
+    
+    ' Логіка округлення
+    total = Math.Round(total, 2)
+    
+    ' Логіка виведення
+    Console.WriteLine("The total amount is: " & total.ToString("F2"))
+    
+    Return total
+End Function 
+Проблеми:
+Проблеми початкового коду:
+1.	Одна функція містить кілька різних завдань (обчислення складних відсотків, округлення, виведення результату).
+2.	Код важче тестувати і підтримувати через кілька різних обов'язків у межах одного методу.
+
+Код після рефакторингу:
+' Основна функція, що обчислює суму
+Public Function CalculateTotalAmount(principal As Double, rate As Double, years As Integer) As Double
+    ' Викликаємо новий метод для обчислення складних відсотків
+    Dim total As Double = CalculateCompoundInterest(principal, rate, years)
+    
+    ' Округлюємо результат
+    total = RoundAmount(total)
+    
+    ' Виводимо результат
+    DisplayAmount(total)
+    
+    Return total
+End Function
+
+' Новий метод для обчислення складних відсотків
+Private Function CalculateCompoundInterest(principal As Double, rate As Double, years As Integer) As Double
+    Return principal * Math.Pow((1 + rate / 100), years)
+End Function
+
+' Метод для округлення значення
+Private Function RoundAmount(amount As Double) As Double
+    Return Math.Round(amount, 2)
+End Function
+
+' Метод для виведення результату
+Private Sub DisplayAmount(amount As Double)
+    Console.WriteLine("The total amount is: " & amount.ToString("F2"))
+End Sub
+Пояснення змін:
+1.	Логіка обчислення складних відсотків була винесена в окремий метод CalculateCompoundInterest, що дозволяє чітко розділити обчислення від іншої логіки.
+2.	Округлення результату винесено в метод RoundAmount, що дозволяє легко змінювати спосіб округлення, якщо це буде необхідно.
+3.	Виведення результату тепер в окремому методі DisplayAmount, що дозволяє змінювати формат виведення або обробляти його іншими способами без зміни основної логіки обчислень.
+
+Encapsulate Collection:
+
+Encapsulate Collection:
+
+Сценарій:
+Уявімо, що ми розробляємо програму для керування бібліотекою. У нас є клас Library, який містить колекцію книг (список книг). Кожна книга має назву, автора та рік видання. Ми хочемо контролювати, як книги додаються до бібліотеки, і забезпечити захист від дублювання книг (щоб одна й та сама книга не була додана кілька разів).
+До рефакторингу:
+Public Class Book
+    Public Property Title As String
+    Public Property Author As String
+    Public Property Year As Integer
+
+    Public Sub New(title As String, author As String, year As Integer)
+        Me.Title = title
+        Me.Author = author
+        Me.Year = year
+    End Sub
+End Class
+
+Public Class Library
+    Public Books As List(Of Book)
+
+    Public Sub New()
+        Books = New List(Of Book)()
+    End Sub
+End Class
+
+Проблеми:
+○	•  Колекція книг є публічною і доступна безпосередньо ззовні, що дозволяє будь-якому коду додавати або змінювати книги без контролю.
+○	•  Немає перевірки на дублікати — одна і та ж книга може бути додана кілька разів.
+
+Після рефакторингу:
+Public Class Book
+    Public Property Title As String
+    Public Property Author As String
+    Public Property Year As Integer
+
+    Public Sub New(title As String, author As String, year As Integer)
+        Me.Title = title
+        Me.Author = author
+        Me.Year = year
+    End Sub
+End Class
+
+Public Class Library
+    ' Тепер Books є приватною колекцією
+    Private Books As List(Of Book)
+
+    Public Sub New()
+        Books = New List(Of Book)()
+    End Sub
+
+    ' Метод для додавання книги з перевіркою на дублікати
+    Public Sub AddBook(newBook As Book)
+        ' Перевірка на наявність книги з таким самим заголовком та автором
+        If Not Books.Any(Function(b) b.Title = newBook.Title AndAlso b.Author = newBook.Author) Then
+            Books.Add(newBook)
+        Else
+            Console.WriteLine("Book already exists in the library.")
+        End If
+    End Sub
+
+    ' Метод для отримання списку всіх книг
+    Public Function GetBooks() As List(Of Book)
+        Return Books
+    End Function
+
+    ' Метод для видалення книги
+    Public Sub RemoveBook(bookToRemove As Book)
+        Books.Remove(bookToRemove)
+    End Sub
+End Class
+
+Що покращилось:
+•  Інкапсуляція колекції: Колекція книг тепер є приватною (Private Books As List(Of Book)), і доступ до неї здійснюється лише через методи класу Library.
+•  Контроль за додаванням книг: Метод AddBook перевіряє, чи така книга вже існує в бібліотеці, порівнюючи назву та автора. Якщо книга вже є, вона не додається знову, і виводиться повідомлення про це.
+•  Доступ до книг: Метод GetBooks дозволяє отримати доступ до списку всіх книг, але цей доступ обмежений і не дозволяє змінювати колекцію без перевірок.
+•  Метод видалення книг: Використовується метод RemoveBook для видалення книг з бібліотеки.
+
+
 	
 Презентацію буде наведено у вигляді додатка.
 
