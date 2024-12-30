@@ -1,0 +1,433 @@
+Міністерство освіти і науки України Харківський національний університет радіоелектроніки
+
+
+
+
+
+Кафедра програмної інженерії
+
+
+
+
+Звіт
+З дисципліни «Аналіз та рефакторинг коду» З лабораторної роботи №4
+
+
+
+
+
+
+
+Виконав
+ст. гр. ПЗПІ-22-7
+Білобров Даніїл Євгенович	Перевів доц. каф. ПІ
+Сокорчук Ігор
+Петрович
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Харків 2024
+ 
+1	Мета роботи
+Розробити програмне забезпечення для IoT або SmartDevice пристрою.
+
+2	Хід роботи
+2.1	ІоТ сконструйовано завдяки додатку WOKWI та написано на коді для Arduine. У якості мікроконтролеру було використано Аrduino-Uno.
+На рисунку 2.1 зображено схему пристрою, що використовується в більш простих методологіях, а саме відображення замовлення клієнту
+ 
+Рисунок 2.1 – схема пристрою з виводом в консоль
+
+
+
+
+
+
+На рисунку 2.2 представлена діаграма прецедентів, де основними акторами є система MQTT брокера та Користувач. IoT система здійснює підключення до мережі, з'єднання з брокером MQTT та публікацію даних. Користувач системи відповідає за процес авторизації та синхронізацію даних між пристроями.
+
+ 
+Рисунок 2.2 – Діаграма відношень між акторами та прецедентами в системі
+
+
+2.2	Розробка бізнес-логіки та функцій налаштування IoT-клієнта 
+
+Підключення до WiFi
+Програма стартує з процесу підключення до вказаної WiFi-мережі. Вона постійно перевіряє стан з'єднання, чекаючи на успішне встановлення з'єднання. Як тільки з'єднання буде встановлено, виводиться IP-адреса пристрою на екран для підтвердження успішного підключення.
+
+Підключення до MQTT брокера
+Після встановлення з'єднання з WiFi програма ініціює з'єднання з MQTT-брокером. Для цього використовується публічний брокер HiveMQ, до якого підключаються через зазначений порт, ім'я користувача та пароль. Якщо підключення не вдається, програма виводить код помилки та автоматично намагається підключитися знову через 5 секунд.
+
+Считування даних про якість повітря
+Основна функція програми — збирання даних про замовлення, таких як номер замовлення, маршрут, час відправлення, час прибуття та ім'я отримувача. Ці дані генеруються випадковим чином (для емуляції) і представляють собою значення, що відображають параметри замовлення в системі.
+Формування даних у форматі JSON
+Програма створює JSON-об'єкт, що містить
+•	Номер замовлення.
+•	Маршрут (точка A - точка B).
+•	Час відправлення у форматі години, хвилини та секунди.
+•	Час прибуття у форматі години, хвилини та секунди.
+•	Ім'я отримувача.
+Ці дані публікуються на MQTT-темі ordersdata. У разі успішної публікації програма позначає, що дані були відправлені, та завершує виконання.
+
+Завершення роботи
+Після успішного відправлення даних програма переходить у режим зупинки, в якому всі циклічні процеси припиняються. У цьому режимі пристрій більше не відправляє нові дані, доки не буде перезапущений. Таким чином, після того як дані про замовлення були успішно надіслані, програма завершить виконання, і пристрій залишається в стані бездіяльності.
+ 
+Особливості реалізації
+•	Відправка даних виконується лише один раз, щоб уникнути повторів.
+•	Для емуляції даних використовується генерація випадкових значень у заданих межах.
+•	Підключення до брокера відновлюється автоматично у разі розриву з'єднання.
+•	Відправка даних виконується із затримкою в 10 секунд після підключення.
+Ця логіка відповідає специфіці IoT-проєктів, що потребують стабільного підключення до мережі, відправки даних і контролю стану пристрою.
+
+2.3	Створення діаграми діяльності для ІоТ клієнта.
+ 
+
+ 
+Рисунок 2.3 – Діаграма діяльності ІоТ клієнта
+
+
+2.4	Створення програмної реалізації бізнес логіки та функцій налаштування ІоТ клієнта
+
+Для забезпечення ефективної роботи IoT системи було розроблено додатковий компонент у базі даних, який здійснює збір даних від IoT пристроїв та передає їх на сервер. Код IoT системи та цього компонента наведено в додатку А.
+ 
+
+ 
+
+Рисунок 2.4 – Програмна реалізація контролеру для ІоТ системи 3 Висновки
+У процесі виконання лабораторної роботи було розроблено програмне забезпечення для IoT пристрою на базі ESP32, яке забезпечує зчитування вагових даних і їх передачу на сервер через MQTT брокер. Реалізовано функції підключення до WiFi та MQTT, а також зчитування вагових показників і публікація даних у форматі JSON. Також було проведено моделювання системи за допомогою UML діаграм та детально описано бізнес-логіку процесів.
+
+
+ 
+ДОДАТОК А
+
+
+Програмний код ІоТ системи та контролеру для ІоТ
+
+
+#include WiFi.h
+#include PubSubClient.h
+
+ WiFi настройки
+const char ssid = Wokwi-GUEST;
+const char password = ;
+
+ MQTT настройки
+const char mqtt_server = broker.hivemq.com;   HiveMQ публичный MQTT брокер
+const int mqtt_port = 1883;   Порт для незащищенного MQTT (без SSL)
+const char mqtt_user = ;  
+const char mqtt_password = ;
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+bool orderSent = false;   По умолчанию - данные не отправлены
+
+ Функция для подключения к WiFi
+void setup_wifi() {
+  delay(10);
+  Serial.println();
+  Serial.print(Подключение к );
+  Serial.println(ssid);
+
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(.);
+  }
+
+  Serial.println();
+  Serial.println(WiFi подключен!);
+  Serial.print(IP address );
+  Serial.println(WiFi.localIP());
+}
+
+ Функция для подключения к MQTT брокеру
+void reconnect() {
+  while (!client.connected()) {
+    Serial.print(Подключение к MQTT...);
+    if (client.connect(ESP32Client, mqtt_user, mqtt_password)) {
+      Serial.println(подключено!);
+    } else {
+      Serial.print(ошибка, rc=);
+      Serial.print(client.state());
+      Serial.println( попытка подключения через 5 секунд);
+      delay(5000);
+    }
+  }
+}
+
+ Генерация случайного времени отправки и прибытия
+String generateRandomTime() {
+  int hour = random(0, 24);
+  int minute = random(0, 60);
+  int second = random(0, 60);
+  char timeBuffer[9];
+  snprintf(timeBuffer, sizeof(timeBuffer), %02d%02d%02d, hour, minute, second);
+  return String(timeBuffer);
+}
+
+ Отправка данных заказа
+void sendOrder() {
+  if (orderSent) {
+    Serial.println(Данные заказа уже были отправлены. Останавливаем отправку.);
+    return;   Если данные уже отправлены, прекращаем отправку
+  }
+
+   Генерация данных заказа
+  String orderNumber = String(random(1000, 9999));   Номер заказа
+  String route = Маршрут точка A - точка B;   Расчёт маршрута
+  String dispatchTime = generateRandomTime();   Время отправки
+  String arrivalTime = generateRandomTime();   Время прибытия
+  String recipientName = Иван Иванов;   Имя получателя
+
+   Создание JSON-формата
+  String jsonBody = {
+                     orderNumber  + orderNumber + , +
+                     route  + route + , +
+                     dispatchTime  + dispatchTime + , +
+                     arrivalTime  + arrivalTime + , +
+                     recipientName  + recipientName +  +
+                     };
+
+  Serial.println(Отправка данных заказа...);
+  Serial.println(jsonBody);
+
+   Публикация данных на тему ordersdata
+  if (client.publish(ordersdata, jsonBody.c_str())) {
+    Serial.println(Данные заказа успешно отправлены!);
+    orderSent = true;   Помечаем, что данные были отправлены
+    stopProgram();   Остановка программы после успешной отправки
+  } else {
+    Serial.println(Ошибка отправки данных заказа!);
+  }
+}
+
+ Функция для остановки программы
+void stopProgram() {
+  Serial.println(Программа остановлена.);
+  while (true) {
+    delay(1000);   Бесконечно останавливаем программу
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  setup_wifi();
+  client.setServer(mqtt_server, mqtt_port);
+}
+
+void loop() {
+  if (!client.connected()) {
+    reconnect();
+  }
+  client.loop();
+   Отправка данных заказа только один раз
+  if (!orderSent) {
+    static unsigned long lastMsg = 0;
+    unsigned long now = millis();
+    if (now - lastMsg  10000) {   10 секунд
+      lastMsg = now;
+      sendOrder();
+    }
+  }
+}
+
+using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using Newtonsoft.Json;
+using MQTTnet;
+using PivoGo.Application.Interfaces.Repositories;
+using PivoGo.Domain.OrderAggregate;
+
+namespace PivoGo.Api.Controllers
+{
+    [ApiController]
+    [Route(api[controller])]
+    public class MqttController  ControllerBase
+    {
+        private readonly MqttService _mqttService;
+        private readonly IOrderRepository _orderRepository;
+
+        public MqttController(MqttService mqttService, IOrderRepository orderRepository)
+        {
+            _mqttService = mqttService;
+            _orderRepository = orderRepository;
+        }
+
+         Получение последнего полученного сообщения
+        [HttpGet(last-message)]
+        public IActionResult GetLastMessage()
+        {
+            if (string.IsNullOrEmpty(_mqttService.LastMessage))
+            {
+                return NotFound(Нет полученных сообщений.);
+            }
+
+            return Ok(_mqttService.LastMessage);
+        }
+
+         Получение и сохранение заказа из последнего сообщения
+        [HttpPost(process-message)]
+        public async TaskIActionResult ProcessMessageAsync(CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrEmpty(_mqttService.LastMessage))
+            {
+                return BadRequest(Нет полученного сообщения для обработки.);
+            }
+
+            try
+            {
+                 Десериализация последнего сообщения в объект Order
+                var orderData = JsonConvert.DeserializeObjectOrder(_mqttService.LastMessage);
+
+                if (orderData == null)
+                {
+                    return BadRequest(Ошибка десериализации данных.);
+                }
+
+                 Сохранение заказа в базу данных
+                await _orderRepository.CreateAsync(orderData, cancellationToken);
+
+                return Ok(Данные заказа успешно сохранены.);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $Произошла ошибка при обработке сообщения {ex.Message});
+            }
+        }
+    }
+}
+
+using PivoGo.Application.Interfaces.Repositories;
+using MQTTnet.Client.Options;
+using MQTTnet.Client;
+using MQTTnet;
+using PivoGo.Domain.OrderAggregate;
+using Newtonsoft.Json;
+using System.Text;
+using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+
+public class MqttService  IHostedService
+{
+    private readonly IMqttClient _mqttClient;
+    private readonly IMqttClientOptions _mqttOptions;
+    private readonly IServiceScopeFactory _serviceScopeFactory;  Инъекция зависимостей для репозитория заказов
+
+    private readonly string _mqttBroker = broker.hivemq.com;   Брокер MQTT
+    private readonly int _mqttPort = 1883;                       Порт MQTT
+    private readonly string _mqttTopic = ordersdata;                Тема для получения данных о заказах
+
+    public string LastMessage { get; private set; }
+
+    public MqttService(IServiceScopeFactory serviceScopeFactory)  Конструктор с инъекцией зависимостей
+    {
+        _serviceScopeFactory = serviceScopeFactory;
+
+        var factory = new MqttFactory();
+        _mqttClient = factory.CreateMqttClient();
+
+        _mqttOptions = new MqttClientOptionsBuilder()
+            .WithTcpServer(_mqttBroker, _mqttPort)
+            .Build();
+
+        ConfigureHandlers();
+    }
+
+    private void ConfigureHandlers()
+    {
+         Обработчик подключения к MQTT брокеру
+        _mqttClient.UseConnectedHandler(async e =
+        {
+            Console.WriteLine(Подключено к брокеру.);
+            try
+            {
+                 Подписка на тему для получения данных о заказах
+                await _mqttClient.SubscribeAsync(new MqttTopicFilterBuilder().WithTopic(_mqttTopic).Build());
+                Console.WriteLine($Подписано на тему {_mqttTopic});
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($Ошибка подписки {ex.Message});
+            }
+        });
+
+         Обработчик отключения от брокера
+        _mqttClient.UseDisconnectedHandler(e =
+        {
+            Console.WriteLine(Отключено от брокера.);
+        });
+
+         Обработчик получения сообщения
+        _mqttClient.UseApplicationMessageReceivedHandler(async e =
+        {
+            LastMessage = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
+            Console.WriteLine($Получено сообщение {LastMessage});
+
+            try
+            {
+                 Десериализация полученного сообщения в объект Order
+                var orderData = JsonConvert.DeserializeObjectOrder(LastMessage);
+
+                if (orderData != null)
+                {
+                     Сохраняем заказ в базе данных
+                    using var scope = _serviceScopeFactory.CreateScope();
+                    var orderRepository = scope.ServiceProvider.GetRequiredServiceIOrderRepository();
+
+                     Сохраняем заказ
+                    await orderRepository.CreateAsync(orderData, CancellationToken.None);
+                    Console.WriteLine(Данные заказа успешно сохранены в базу.);
+                }
+                else
+                {
+                    Console.WriteLine(Ошибка десериализации данных.);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($Ошибка при сохранении данных {ex.Message});
+            }
+        });
+    }
+
+    public async Task StartAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+             Подключение к MQTT брокеру
+            await _mqttClient.ConnectAsync(_mqttOptions, cancellationToken);
+            Console.WriteLine(Ожидание сообщений...);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($Ошибка подключения {ex.Message});
+        }
+    }
+
+    public async Task StopAsync(CancellationToken cancellationToken)
+    {
+         Отключение от MQTT брокера
+        await _mqttClient.DisconnectAsync();
+        Console.WriteLine(Отключение от брокера...);
+    }
+}
+
+
+
+

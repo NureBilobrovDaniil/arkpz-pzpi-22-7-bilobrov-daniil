@@ -1,0 +1,10 @@
+﻿using PivoGo.Application.CQRS.Dtos.Commands;
+using MediatR;
+
+namespace PivoGo.Application.CQRS.Commands.Auth
+{
+    public class LoginWithGitHubCommand : IRequest<AuthResponseDto>
+    {
+        public string Code { get; set; }
+    }
+}
